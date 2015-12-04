@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/gaspiman/ingenio/neuro"
+	"github.com/gaspiman/neuro"
 )
 
 func main() {
