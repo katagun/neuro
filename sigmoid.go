@@ -24,6 +24,6 @@ func (f sigmoidFunc) backpropError(n *Network, layer int) error {
 }
 
 // Returns the average error on the output layer
-func (f sigmoidFunc) outputError(output *mat64.Dense, target [][]float64) error {
+func (f sigmoidFunc) layerError(output *mat64.Dense, target [][]float64) error {
 	return nil
 }

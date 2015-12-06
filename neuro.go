@@ -38,7 +38,7 @@ type (
 	activationFunction interface {
 		activate(*mat64.Dense, *mat64.Dense, bool, bool) error
 		backpropError(*Network, int) error
-		outputError(*mat64.Dense, [][]float64) error
+		layerError(*mat64.Dense, [][]float64) error
 	}
 )
 
@@ -210,8 +210,8 @@ func (n *Network) Backward(target [][]float64) error {
 }
 
 // GetError return the error in the network in relation to the Cost function
-func (n *Network) GetError(target [][]float64) (float64, error) {
-	err := n.Layers[n.OutputLayer].Activation.outputError(n.Layers[n.OutputLayer].Nodes, target)
+func (n *Network) NetError(target [][]float64) (float64, error) {
+	err := n.Layers[n.OutputLayer].Activation.layerError(n.Layers[n.OutputLayer].Nodes, target)
 	if err != nil {
 		return 0, err
 	}

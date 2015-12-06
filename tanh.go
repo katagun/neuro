@@ -37,6 +37,6 @@ func (f tanhFunc) backpropError(n *Network, layer int) error {
 }
 
 // Returns the average error on the output layer
-func (f tanhFunc) outputError(output *mat64.Dense, target [][]float64) error {
+func (f tanhFunc) layerError(output *mat64.Dense, target [][]float64) error {
 	return nil
 }
