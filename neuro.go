@@ -1,7 +1,7 @@
 package neuro
 
 import (
-	"encoding/gob"
+	"encoding/json"
 	"errors"
 	"math/rand"
 	"os"
@@ -14,6 +14,7 @@ type (
 	Network struct {
 		Layers      []Layer
 		Input       *mat64.Dense
+		Activations []string
 		InputCount  int
 		OutputLayer int
 		BatchSize   int
@@ -39,6 +40,13 @@ type (
 		activate(*mat64.Dense, *mat64.Dense, bool, bool) error
 		backpropError(*Network, int) error
 		layerError(*mat64.Dense, [][]float64) error
+	}
+	Export struct {
+		Input       int
+		Layers      []int
+		Activations []string
+		Weights     [][]float64
+		Bias        [][]float64
 	}
 )
 
@@ -86,13 +94,14 @@ func New(nodes []int, activation []string, batchSize int, train bool) (*Network,
 	n.BatchSize = batchSize
 	n.Layers = make([]Layer, len(nodes)-1)
 	n.OutputLayer = len(nodes) - 2
-
+	n.Activations = activation
 	// Create the input matrice
 	n.Input = mat64.NewDense(n.BatchSize, nodes[0], nil)
 	n.InputCount = nodes[0]
 
 	// Initialize the Seed for Rand
 	rand.Seed(time.Now().UTC().UnixNano())
+	//rand.Seed(0)
 	// Go through all the nodes and layers
 	for k := range layerNodes {
 		n.Layers[k].NodesCount = layerNodes[k]
@@ -230,68 +239,50 @@ func (n *Network) GetOutput() [][]float64 {
 
 // Export saves the layers weights in a specified file location
 func (n *Network) Export(path string) error {
-	// create a file
+	// create the export file
 	dataFile, err := os.Create(path)
 	if err != nil {
 		return err
 	}
 	defer dataFile.Close()
-	//weights := make([][][]float64, len(n.Layers))
-	weights := map[string][][][]float64{}
-	for k, layer := range n.Layers {
-		r, _ := layer.Weights.Dims()
-		weights["weights"][k] = make([][]float64, r)
-		for i := 0; i < r; i++ {
-			weights["weights"][k][i] = layer.Weights.RawRowView(i)
-		}
+	// Number of layers in the network
+	layersCount := len(n.Layers)
+	export := Export{
+		Input:       n.InputCount,
+		Layers:      make([]int, layersCount),
+		Weights:     make([][]float64, layersCount),
+		Bias:        make([][]float64, layersCount),
+		Activations: make([]string, layersCount),
 	}
-
-	//////////////
-	/////////////////////
-	/////////////////////////
-	///////////////////////////////
-	//FINISH EXPORT IMPORT CUSTOM VECS AND MATRICES
-	///////////////////////////////
-	/////////////////////////
-	////////////////////
-	//////////////
-
-	dataEncoder := gob.NewEncoder(dataFile)
-	err = dataEncoder.Encode(weights)
+	for k := range n.Layers {
+		// Set the layer node counts
+		export.Layers[k] = n.Layers[k].NodesCount
+		// Retrieve the weights
+		r, c := n.Layers[k].Weights.Dims()
+		export.Weights[k] = make([]float64, r*c)
+		for i := 0; i < r; i++ {
+			for i2, v := range n.Layers[k].Weights.RawRowView(i) {
+				export.Weights[k][i*c+i2] = v
+			}
+		}
+		// Retrieve the bias weights
+		r, _ = n.Layers[k].BiasWeights.Dims()
+		export.Bias[k] = make([]float64, r)
+		for i := 0; i < r; i++ {
+			export.Bias[k][i] = n.Layers[k].BiasWeights.At(i, 0)
+		}
+		// Retrieve the activation functions
+		export.Activations = n.Activations
+	}
+	js, err := json.Marshal(export)
 	if err != nil {
 		return err
 	}
+	dataFile.Write(js)
 	return nil
 }
 
 // Import takes loads layer weights in to the network
-func (n *Network) Import(path string) error {
-	weights := [][][]float64{}
-	// open data file
-	dataFile, err := os.Open(path)
-	if err != nil {
-		return err
-	}
-	defer dataFile.Close()
-	dataDecoder := gob.NewDecoder(dataFile)
-	err = dataDecoder.Decode(&weights)
-	if err != nil {
-		return err
-	}
-	if len(weights) != len(n.Layers) {
-		return errors.New(ERROR_LAYERS_IMPORT)
-	}
-	for k, layer := range n.Layers {
-		r, c := layer.Weights.Dims()
-		if len(weights[k]) != r {
-			return errors.New(ERROR_DIMENSIONS_MISMATCH)
-		}
-		for k2, row := range weights[k] {
-			if len(row) != c {
-				return errors.New(ERROR_DIMENSIONS_MISMATCH)
-			}
-			layer.Weights.SetRow(k2, row)
-		}
-	}
+func ImportNetwork(path string) error {
 	return nil
 }

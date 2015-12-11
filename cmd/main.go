@@ -42,5 +42,5 @@ func main() {
 	elapsed := time.Since(start)
 	log.Printf("Neural took %s", elapsed)
 	/////////////////////////////////////
-
+	n.Export("/data/hdd/languageData/en/naskoTEST.json")
 }
