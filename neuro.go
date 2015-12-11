@@ -3,6 +3,8 @@ package neuro
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
+	"io/ioutil"
 	"math/rand"
 	"os"
 	"time"
@@ -42,7 +44,6 @@ type (
 		layerError(*mat64.Dense, [][]float64) error
 	}
 	Export struct {
-		Input       int
 		Layers      []int
 		Activations []string
 		Weights     [][]float64
@@ -65,6 +66,7 @@ const (
 	ERROR_LEARN_RATE          = "[ERROR] Set the network's learn rate. n.LearnRate > 0"
 	ERROR_NOT_TRAINABLE       = "[ERROR] Network does not support training"
 	ERROR_LAYERS_IMPORT       = "[ERROR] Network Layers mismatch"
+	ERROR_WEIGHT_MISMATCH     = "[ERROR] Provided weights and bias values do not match the nework structure"
 )
 
 func init() {
@@ -72,7 +74,7 @@ func init() {
 }
 
 // New returns an initialized the Neural Network
-func New(nodes []int, activation []string, batchSize int, train bool) (*Network, error) {
+func New(nodes []int, activation []string, batchSize int, train bool, importWeights [][]float64, importBias [][]float64) (*Network, error) {
 	n := new(Network)
 	if len(nodes) < 2 {
 		return nil, errors.New(ERROR_LAYERS_COUNT)
@@ -90,9 +92,14 @@ func New(nodes []int, activation []string, batchSize int, train bool) (*Network,
 	}
 	// The other layers nodes go here
 	layerNodes := nodes[1:len(nodes)]
+	if importWeights != nil || importBias != nil {
+		if len(importWeights) != len(importBias) || len(importWeights) != len(layerNodes) {
+			return nil, errors.New(ERROR_WEIGHT_MISMATCH)
+		}
+	}
 	// Batchsize of the network
 	n.BatchSize = batchSize
-	n.Layers = make([]Layer, len(nodes)-1)
+	n.Layers = make([]Layer, len(layerNodes))
 	n.OutputLayer = len(nodes) - 2
 	n.Activations = activation
 	// Create the input matrice
@@ -116,15 +123,36 @@ func New(nodes []int, activation []string, batchSize int, train bool) (*Network,
 		// Attach the activation function to the layer
 		n.Layers[k].Activation = act
 		// Create the BiasWeights vector and seed it with random values
-		n.Layers[k].BiasWeights = mat64.NewVector(layerNodes[k], randomFunc(1, layerNodes[k], -1, 1))
+		if importBias == nil {
+			n.Layers[k].BiasWeights = mat64.NewVector(layerNodes[k], randomFunc(1, layerNodes[k], -1, 1))
+		} else {
+			if len(importBias[k]) != layerNodes[k] {
+				return nil, errors.New(ERROR_WEIGHT_MISMATCH)
+			}
+			n.Layers[k].BiasWeights = mat64.NewVector(layerNodes[k], importBias[k])
+		}
 		switch k {
 		// Check if the input matrice is the previous layer
 		case 0:
 			// Create the Weights matrices and seed them with random values
-			n.Layers[k].Weights = mat64.NewDense(n.InputCount, n.Layers[k].NodesCount, randomFunc(n.InputCount, n.Layers[k].NodesCount, -1, 1))
+			if importWeights == nil {
+				n.Layers[k].Weights = mat64.NewDense(n.InputCount, n.Layers[k].NodesCount, randomFunc(n.InputCount, n.Layers[k].NodesCount, -1, 1))
+			} else {
+				if len(importWeights[k]) != n.InputCount*n.Layers[k].NodesCount {
+					return nil, errors.New(ERROR_WEIGHT_MISMATCH)
+				}
+				n.Layers[k].Weights = mat64.NewDense(n.InputCount, n.Layers[k].NodesCount, importWeights[k])
+			}
 		default:
 			// Create the Weights matrices and seed them with random values
-			n.Layers[k].Weights = mat64.NewDense(n.Layers[k-1].NodesCount, n.Layers[k].NodesCount, randomFunc(n.Layers[k-1].NodesCount, n.Layers[k].NodesCount, -1, 1))
+			if importWeights == nil {
+				n.Layers[k].Weights = mat64.NewDense(n.Layers[k-1].NodesCount, n.Layers[k].NodesCount, randomFunc(n.Layers[k-1].NodesCount, n.Layers[k].NodesCount, -1, 1))
+			} else {
+				if len(importWeights) != n.Layers[k-1].NodesCount*n.Layers[k].NodesCount {
+					return nil, errors.New(ERROR_WEIGHT_MISMATCH)
+				}
+				n.Layers[k].Weights = mat64.NewDense(n.Layers[k-1].NodesCount, n.Layers[k].NodesCount, importWeights[0])
+			}
 		}
 	}
 	if !train {
@@ -248,15 +276,15 @@ func (n *Network) Export(path string) error {
 	// Number of layers in the network
 	layersCount := len(n.Layers)
 	export := Export{
-		Input:       n.InputCount,
-		Layers:      make([]int, layersCount),
+		Layers:      make([]int, layersCount+1),
 		Weights:     make([][]float64, layersCount),
 		Bias:        make([][]float64, layersCount),
 		Activations: make([]string, layersCount),
 	}
+	export.Layers[0] = n.InputCount
 	for k := range n.Layers {
 		// Set the layer node counts
-		export.Layers[k] = n.Layers[k].NodesCount
+		export.Layers[k+1] = n.Layers[k].NodesCount
 		// Retrieve the weights
 		r, c := n.Layers[k].Weights.Dims()
 		export.Weights[k] = make([]float64, r*c)
@@ -283,6 +311,16 @@ func (n *Network) Export(path string) error {
 }
 
 // Import takes loads layer weights in to the network
-func ImportNetwork(path string) error {
-	return nil
+func ImportNetwork(path string, batchSize int, train bool) (*Network, error) {
+	file, err := ioutil.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	export := Export{}
+	err = json.Unmarshal(file, &export)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println(export)
+	return nil, nil
 }

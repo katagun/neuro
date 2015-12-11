@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	n, err := neuro.New([]int{3, 10, 5, 2}, []string{"tanh", "sigmoid", "softmax"}, 3, true)
+	n, err := neuro.New([]int{3, 10, 5, 2}, []string{"tanh", "sigmoid", "softmax"}, 3, true, nil, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -42,5 +42,12 @@ func main() {
 	elapsed := time.Since(start)
 	log.Printf("Neural took %s", elapsed)
 	/////////////////////////////////////
-	n.Export("/data/hdd/languageData/en/naskoTEST.json")
+	err = n.Export("/data/hdd/languageData/en/naskoTEST.json")
+	if err != nil {
+		log.Fatal(err)
+	}
+	_, err = neuro.ImportNetwork("/data/hdd/languageData/en/naskoTEST.json", 10, false)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
