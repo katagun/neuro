@@ -271,13 +271,7 @@ func (n *Network) GetOutput() [][]float64 {
 }
 
 // Export saves the layers weights in a specified file location
-func (n *Network) Export(path string) error {
-	// create the export file
-	dataFile, err := os.Create(path)
-	if err != nil {
-		return err
-	}
-	defer dataFile.Close()
+func (n *Network) Export(path string) (NetData, error) {
 	// Number of layers in the network
 	layersCount := len(n.Layers)
 	export := NetData{
@@ -306,16 +300,26 @@ func (n *Network) Export(path string) error {
 		// Retrieve the activation functions
 		export.Activations = n.Activations
 	}
+	if path == "" {
+		return export, nil
+	}
+	// create the export file
+	dataFile, err := os.Create(path)
+	if err != nil {
+		return NetData{}, err
+	}
+	defer dataFile.Close()
+
 	js, err := json.Marshal(export)
 	if err != nil {
-		return err
+		return NetData{}, err
 	}
 	dataFile.Write(js)
-	return nil
+	return export, nil
 }
 
 // Import takes loads layer weights in to the network
-func ImportNetwork(path string, batchSize int, train bool) (*Network, error) {
+func Import(path string, batchSize int, train bool) (*Network, error) {
 	file, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, err

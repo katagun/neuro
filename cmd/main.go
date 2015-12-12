@@ -47,11 +47,11 @@ func main() {
 	elapsed := time.Since(start)
 	log.Printf("Neural took %s", elapsed)
 	/////////////////////////////////////
-	err = n.Export("/data/hdd/languageData/en/naskoTEST.json")
+	_, err = n.Export("/data/hdd/languageData/en/naskoTEST.json")
 	if err != nil {
 		log.Fatal(err)
 	}
-	y, err := neuro.ImportNetwork("/data/hdd/languageData/en/naskoTEST.json", 3, false)
+	y, err := neuro.Import("/data/hdd/languageData/en/naskoTEST.json", 3, false)
 	if err != nil {
 		log.Fatal(err)
 	}
