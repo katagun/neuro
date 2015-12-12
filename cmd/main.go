@@ -9,7 +9,12 @@ import (
 )
 
 func main() {
-	n, err := neuro.New([]int{3, 10, 5, 2}, []string{"tanh", "sigmoid", "softmax"}, 3, true, nil, nil)
+	n, err := neuro.New(neuro.NetData{
+		Nodes:       []int{3, 10, 5, 2},
+		Activations: []string{"tanh", "sigmoid", "softmax"},
+		BatchSize:   3,
+		Train:       true,
+	})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -17,7 +22,7 @@ func main() {
 	target := [][]float64{[]float64{1, 0}, []float64{0, 1}, []float64{0, 1}}
 
 	// Setting up the network's learn rate
-	n.LearnRate = 0.01
+	n.LearnRate = 0.1
 	n.Momentum = 0.5
 
 	/////////////////////////////////////
@@ -46,8 +51,15 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	_, err = neuro.ImportNetwork("/data/hdd/languageData/en/naskoTEST.json", 10, false)
+	y, err := neuro.ImportNetwork("/data/hdd/languageData/en/naskoTEST.json", 3, false)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	if err := y.Forward(in); err != nil {
+		panic(err)
+	}
+
+	fmt.Println("\n\n", y.GetOutput())
+
 }
