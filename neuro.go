@@ -330,3 +330,23 @@ func ImportNetwork(path string, batchSize int, train bool) (*Network, error) {
 	fmt.Println("\n", data, "\n")
 	return New(data)
 }
+
+// Custom override the network weights
+func (n *Network) ImportWeights(customWeights []DataWeights) error {
+	if len(customWeights) != len(n.Layers) {
+		return errors.New(ERROR_WEIGHT_MISMATCH)
+	}
+	for k := range n.Layers {
+		rw, cw := n.Layers[k].Weights.Dims()
+		if len(customWeights[k].Weights) != rw*cw {
+			return errors.New(ERROR_WEIGHT_MISMATCH)
+		}
+		_, cb := n.Layers[k].BiasWeights.Dims()
+		if len(customWeights[k].Weights) != cb {
+			return errors.New(ERROR_WEIGHT_MISMATCH)
+		}
+		n.Layers[k].Weights = mat64.NewDense(rw, cw, customWeights[k].Weights)
+		n.Layers[k].BiasWeights = mat64.NewVector(cb, customWeights[k].BiasWeights)
+	}
+	return nil
+}
