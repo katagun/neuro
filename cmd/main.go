@@ -5,13 +5,17 @@ import (
 	"log"
 	"time"
 
-	"github.com/unigraph/neuro"
+	"github.com/ingeniosity/neuro"
+)
+
+const (
+	exportPath = "/data/hdd/languageData/en/naskoTEST.json"
 )
 
 func main() {
 	n, err := neuro.New(neuro.NetData{
-		Nodes:       []int{3, 10, 5, 2},
-		Activations: []string{"tanh", "sigmoid", "softmax"},
+		Nodes:       []int{3, 10, 2},
+		Activations: []string{"tanh", "softmax"},
 		BatchSize:   3,
 		Train:       true,
 	})
@@ -29,7 +33,7 @@ func main() {
 	start := time.Now()
 	/////////////////////////////////////
 
-	for i := 0; i < 10000; i++ {
+	for i := 0; i < 1000; i++ {
 		if err := n.Forward(in); err != nil {
 			panic(err)
 		}
@@ -37,6 +41,12 @@ func main() {
 		if err := n.Backward(target); err != nil {
 			panic(err)
 		}
+
+		netError, err := n.NetError(target)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println("NET ERROR:", netError)
 
 	}
 	if err := n.Forward(in); err != nil {
@@ -47,11 +57,11 @@ func main() {
 	elapsed := time.Since(start)
 	log.Printf("Neural took %s", elapsed)
 	/////////////////////////////////////
-	_, err = n.Export("/data/hdd/languageData/en/naskoTEST.json")
+	_, err = n.Export(exportPath)
 	if err != nil {
 		log.Fatal(err)
 	}
-	y, err := neuro.Import("/data/hdd/languageData/en/naskoTEST.json", 3, false)
+	y, err := neuro.Import(exportPath, 3, false)
 	if err != nil {
 		log.Fatal(err)
 	}

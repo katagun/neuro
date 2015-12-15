@@ -41,7 +41,7 @@ type (
 	activationFunction interface {
 		activate(*mat64.Dense, *mat64.Dense, bool, bool) error
 		backpropError(*Network, int) error
-		layerError(*mat64.Dense, [][]float64) error
+		layerError(*mat64.Dense, [][]float64) (float64, error)
 	}
 	NetData struct {
 		Nodes       []int
@@ -253,11 +253,7 @@ func (n *Network) Backward(target [][]float64) error {
 
 // GetError return the error in the network in relation to the Cost function
 func (n *Network) NetError(target [][]float64) (float64, error) {
-	err := n.Layers[n.OutputLayer].Activation.layerError(n.Layers[n.OutputLayer].Nodes, target)
-	if err != nil {
-		return 0, err
-	}
-	return 0, nil
+	return n.Layers[n.OutputLayer].Activation.layerError(n.Layers[n.OutputLayer].Nodes, target)
 }
 
 // GetOutput returns the values from the last layer of the network

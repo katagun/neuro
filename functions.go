@@ -113,3 +113,19 @@ func preventOverflow(v float64) float64 {
 	}
 	return v
 }
+
+// Mean squared error
+func meanSquaredError(output *mat64.Dense, target [][]float64) (float64, error) {
+	r, _ := output.Dims()
+	if len(target) != r {
+		return 0, errors.New(ERROR_DIMENSIONS_MISMATCH)
+	}
+	netError := 0.0
+	for i := 0; i < r; i++ {
+		for k, v := range output.RawRowView(i) {
+			netError += math.Pow(v-target[i][k], 2)
+		}
+	}
+	netError = netError / float64(r)
+	return netError, nil
+}

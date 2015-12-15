@@ -14,27 +14,6 @@ func init() {
 	activationMap["softmax"] = &softmaxFunc{}
 }
 
-/*
-func (softmaxFunc) activate(m, in *mat64.Dense, deriv bool, transpose bool) error {
-	var g float64
-	r, c := m.Dims()
-	rowSum := make([]float64, r)
-	m.Apply(
-		func(r, c int, v float64) float64 {
-			v = preventOverflow(v)
-			g = math.Exp(v)
-			rowSum[r] += g
-			return g
-		}, in)
-	for k := 0; k < c; k++ {
-		col := mat64.Col(nil, k, m)
-		floatsDivision(col, rowSum)
-		m.SetCol(k, col)
-	}
-	return nil
-}
-*/
-
 func (softmaxFunc) activate(in, out *mat64.Dense, deriv bool, transpose bool) error {
 	rowsIn, colsIn := in.Dims()
 	rowsOut, colsOut := out.Dims()
@@ -92,6 +71,19 @@ func (f softmaxFunc) backpropError(n *Network, layer int) error {
 }
 
 // Returns the average error on the output layer
-func (f softmaxFunc) layerError(output *mat64.Dense, target [][]float64) error {
-	return nil
+func (f softmaxFunc) layerError(output *mat64.Dense, target [][]float64) (float64, error) {
+	r, _ := output.Dims()
+	if len(target) != r {
+		return 0, errors.New(ERROR_DIMENSIONS_MISMATCH)
+	}
+	netError := 0.0
+	for i := 0; i < r; i++ {
+		for k, v := range output.RawRowView(i) {
+			if target[i][k] == 1.0 {
+				netError -= math.Log(v)
+			}
+		}
+	}
+	netError = netError / float64(r)
+	return netError, nil
 }
