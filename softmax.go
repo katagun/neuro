@@ -49,12 +49,19 @@ func (softmaxFunc) activate(in, out *mat64.Dense, deriv bool, transpose bool) er
 
 func activateSoftmaxFloat(a []float64, f func(float64) float64) []float64 {
 	var sum float64
-	for k := range a {
-		a[k] = f(a[k])
-		sum += a[k]
-	}
-	for k := range a {
-		a[k] = a[k] / sum
+	var s, e int
+	step := len(a) / splitSoftmax
+	for i := 0; i < step; i++ {
+		s = i * splitSoftmax
+		e = s + splitSoftmax
+		sum = 0
+		for k := range a[s:e] {
+			a[s+k] = f(a[s+k])
+			sum += a[s+k]
+		}
+		for k := range a[s:e] {
+			a[s+k] = a[s+k] / sum
+		}
 	}
 	return a
 }

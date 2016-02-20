@@ -44,11 +44,12 @@ type (
 		layerError(*mat64.Dense, [][]float64) (float64, error)
 	}
 	NetData struct {
-		Nodes       []int
-		Activations []string
-		WeightsData []DataWeights
-		BatchSize   int
-		Train       bool
+		Nodes        []int
+		Activations  []string
+		WeightsData  []DataWeights
+		BatchSize    int
+		Train        bool
+		SplitSoftmax int
 	}
 	DataWeights struct {
 		Weights     []float64
@@ -57,6 +58,7 @@ type (
 )
 
 var activationMap = map[string]activationFunction{}
+var splitSoftmax int
 
 const (
 	ERROR_ACTIVATION_COUNT    = "[ERROR] The number of layers do not match the activation functions"
@@ -106,6 +108,7 @@ func New(data NetData) (*Network, error) {
 	n.BatchSize = data.BatchSize
 	n.Layers = make([]Layer, len(layerNodes))
 	n.OutputLayer = len(data.Nodes) - 2
+	splitSoftmax = data.SplitSoftmax
 	n.Activations = data.Activations
 	// Create the input matrice
 	n.Input = mat64.NewDense(n.BatchSize, data.Nodes[0], nil)

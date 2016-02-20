@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/ingeniosity/neuro"
+	"github.com/ingn/neuro"
 )
 
 const (
@@ -14,16 +14,19 @@ const (
 
 func main() {
 	n, err := neuro.New(neuro.NetData{
-		Nodes:       []int{3, 10, 2},
-		Activations: []string{"tanh", "softmax"},
-		BatchSize:   3,
-		Train:       true,
+		Nodes:        []int{3, 10, 4},
+		Activations:  []string{"tanh", "softmax"},
+		BatchSize:    3,
+		Train:        true,
+		SplitSoftmax: 2,
 	})
 	if err != nil {
 		log.Fatal(err)
 	}
 	in := [][]float64{[]float64{1, 1, 0}, []float64{0, 1, 1}, []float64{1, 0, 1}}
-	target := [][]float64{[]float64{1, 0}, []float64{0, 1}, []float64{0, 1}}
+	target := [][]float64{[]float64{1, 0, 1, 0}, []float64{0, 1, 0, 1}, []float64{0, 1, 0, 1}}
+	//in := [][]float64{[]float64{1, 1, 0}}
+	//target := [][]float64{[]float64{1, 0, 1, 0}}
 
 	// Setting up the network's learn rate
 	n.LearnRate = 0.1
@@ -33,7 +36,7 @@ func main() {
 	start := time.Now()
 	/////////////////////////////////////
 
-	for i := 0; i < 1000; i++ {
+	for i := 0; i < 100; i++ {
 		if err := n.Forward(in); err != nil {
 			panic(err)
 		}
